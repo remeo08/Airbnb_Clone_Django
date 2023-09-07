@@ -21,7 +21,7 @@ from django.urls import path, include
 # rooms import 방법1 : from rooms.views import say_hello
 # rooms import 방법2 : from rooms import views  ---> path("rooms", views.say_hello)
 # 방법2의 단점. 다른 모델 ex) users에도 똑같이 적용하면 이름이 겹친다.
-# 이 경우 해결 방법: from users import views as users_views  ---> path("", room_views.say_hello)
+# 이 경우 해결 방법: from users import views as users_views  ---> path("api/v1/어쩌구", room_views.say_hello)
 
 urlpatterns = [
     path("admin/", admin.site.urls),

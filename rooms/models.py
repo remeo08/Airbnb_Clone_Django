@@ -41,7 +41,7 @@ class Room(CommonModel):
         related_name="rooms",
     )
 
-    def __str__(room) -> str:
+    def __str__(self) -> str:
         return self.name
 
     def total_amenities(room):

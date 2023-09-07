@@ -9,7 +9,8 @@ from rest_framework.exceptions import (
 from rest_framework.status import HTTP_204_NO_CONTENT
 from .models import Amenity, Room
 from categories.models import Category
-from .serializer import AmenitySerializer, RoomDetailSerializer, RoomListSerializer
+from .serializers import AmenitySerializer, RoomDetailSerializer, RoomListSerializer
+from reviews.serializers import ReviewSerializer
 
 
 class Amenities(APIView):
@@ -66,7 +67,9 @@ class AmenityDetail(APIView):
 class Rooms(APIView):
     def get(self, request):
         all_rooms = Room.objects.all()
-        serializer = RoomListSerializer(all_rooms, many=True)
+        serializer = RoomListSerializer(
+            all_rooms, context={"request": request}, many=True
+        )
         return Response(serializer.data)
 
     def post(self, request):
@@ -93,6 +96,7 @@ class Rooms(APIView):
                         amenity = Amenity.objects.get(pk=amenity_pk)
                     except Amenity.DoesNotExist:
                         raise ParseError(f"Amenity with id {amenity_pk} not found")
+                        # room.delete() 위의 경우에는 어메니티에 오류가 있어도 일단 데이터는 Post됨. 그걸 막는 코드를 추가할 수도, 안 할 수도 있다.
                     room.amenities.add(amenity)
                 serializer = RoomDetailSerializer(room)
                 return Response(serializer.data)
@@ -111,13 +115,18 @@ class RoomDetail(APIView):
 
     def get(self, request, pk):
         room = self.get_objects(pk)
-        serializer = RoomDetailSerializer(room)
+        serializer = RoomDetailSerializer(
+            room,
+            context={"request": request},
+        )
         return Response(serializer.data)
 
     def put(self, request, pk):
-        amenity = self.get_object(pk)
+        room = self.get_object(pk)
         if not request.user.is_authenticated:
             raise NotAuthenticated
+        if room.owner != request.user:
+            raise PermissionDenied
 
     ######################### put 미완 ############################
 
@@ -130,7 +139,7 @@ class RoomDetail(APIView):
     # category,
     #             data=request.data,
     #             partial=True,
-    #         )  # 부분 수정 가능하도록 partial true
+    #         )
     #         if serializer.is_valid():
     #             updated_amenity = serializer.save()
     #             return Response(RoomDetailSerializer(updated_amenity).data)
@@ -147,3 +156,19 @@ class RoomDetail(APIView):
             raise PermissionDenied
         room.delete()
         return Response(status=HTTP_204_NO_CONTENT)
+
+
+class RoomReviews(APIView):
+    def get_objects(self, pk):
+        try:
+            return Room.objects.get(pk=pk)
+        except Room.DoesNotExist:
+            raise NotFound
+
+    def get(self, request, pk):
+        page = request.query_params.get("page", 1)
+        page = int(page)
+        print(type(page))
+        room = self.get_object(pk)
+        serializer = ReviewSerializer(room.reviews.all(), many=True)
+        return Response(serializer.data)

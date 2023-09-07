@@ -39,15 +39,17 @@ class Perk(CommonModel):
 
     """What is included on an Experience"""
 
-    name = models.CharField(max_length=100)
-    details = models.CharField(
+    name = models.CharField(
         max_length=100,
+    )
+    details = models.CharField(
+        max_length=250,
         blank=True,
-        null=True,
+        default="",
     )
     explanation = models.TextField(
         blank=True,
-        null=True,
+        default="",
     )
 
     def __str__(self) -> str:
