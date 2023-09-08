@@ -28,10 +28,11 @@ class RoomDetailSerializer(serializers.ModelSerializer):
 
     rating = serializers.SerializerMethodField()  # potato 필드의 값을 계산할 method를 만들거다.
     is_owner = serializers.SerializerMethodField()  # potato 필드의 값을 계산할 method를 만들거다.
-    reviews = ReviewSerializer(
-        many=True,
-        read_only=True,
-    )
+    # 역접근자로 가져오는 리뷰 데이터가 많아지면 무리 되므로 분리
+    # reviews = ReviewSerializer(
+    #     many=True,
+    #     read_only=True,
+    # )
 
     class Meta:
         model = Room
@@ -48,7 +49,7 @@ class RoomDetailSerializer(serializers.ModelSerializer):
 
 
 class RoomListSerializer(serializers.ModelSerializer):
-    rating = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()  # 아래 fields에 넣어야 함.
     is_owner = serializers.SerializerMethodField()  # potato 필드의 값을 계산할 method를 만들거다.
 
     class Meta:

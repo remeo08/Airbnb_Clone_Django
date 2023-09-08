@@ -1,6 +1,9 @@
 from django.db import models
 from common.models import CommonModel
 
+# A-FK(B)
+# B.A_set
+
 
 class Review(CommonModel):
 
