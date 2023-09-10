@@ -68,6 +68,8 @@ class AmenityDetail(APIView):
 
 
 class Rooms(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get(self, request):
         all_rooms = Room.objects.all()
         serializer = RoomListSerializer(
@@ -80,40 +82,39 @@ class Rooms(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        if request.user.is_authenticated:
-            serializer = RoomDetailSerializer(data=request.data)
-            if serializer.is_valid():
-                category_pk = request.data.get("category")
-                if not category_pk:
-                    raise ParseError("Category is required")
-                try:
-                    category = Category.objects.get(pk=category_pk)
-                    if category.kind == Category.CategoryKindChoices.EXPERIENCES:
-                        raise ParseError("The category kind should be 'rooms'")
-                except Category.DoesNotExist:
-                    raise ParseError("Category not found")
-                room = serializer.save(
-                    owner=request.user,
-                    category=category,
-                )
+        serializer = RoomDetailSerializer(data=request.data)
+        if serializer.is_valid():
+            category_pk = request.data.get("category")
+            if not category_pk:
+                raise ParseError("Category is required")
+            try:
+                category = Category.objects.get(pk=category_pk)
+                if category.kind == Category.CategoryKindChoices.EXPERIENCES:
+                    raise ParseError("The category kind should be 'rooms'")
+            except Category.DoesNotExist:
+                raise ParseError("Category not found")
+            room = serializer.save(
+                owner=request.user,
+                category=category,
+            )
 
-                amenities = request.data.get("amenities")
-                for amenity_pk in amenities:
-                    try:
-                        amenity = Amenity.objects.get(pk=amenity_pk)
-                    except Amenity.DoesNotExist:
-                        raise ParseError(f"Amenity with id {amenity_pk} not found")
-                        # room.delete() 위의 경우에는 어메니티에 오류가 있어도 일단 데이터는 Post됨. 그걸 막는 코드를 추가할 수도, 안 할 수도 있다.
-                    room.amenities.add(amenity)
-                serializer = RoomDetailSerializer(room)
-                return Response(serializer.data)
-            else:
-                return Response(serializer.errors)
+            amenities = request.data.get("amenities")
+            for amenity_pk in amenities:
+                try:
+                    amenity = Amenity.objects.get(pk=amenity_pk)
+                except Amenity.DoesNotExist:
+                    raise ParseError(f"Amenity with id {amenity_pk} not found")
+                    # room.delete() 위의 경우에는 어메니티에 오류가 있어도 일단 데이터는 Post됨. 그걸 막는 코드를 추가할 수도, 안 할 수도 있다.
+                room.amenities.add(amenity)
+            serializer = RoomDetailSerializer(room)
+            return Response(serializer.data)
         else:
-            raise NotAuthenticated
+            return Response(serializer.errors)
 
 
 class RoomDetail(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get_objects(self, pk):
         try:
             return Room.objects.get(pk=pk)
@@ -130,8 +131,8 @@ class RoomDetail(APIView):
 
     def put(self, request, pk):
         room = self.get_object(pk)
-        if not request.user.is_authenticated:
-            raise NotAuthenticated
+        # if not request.user.is_authenticated:
+        #     raise NotAuthenticated
         if room.owner != request.user:
             raise PermissionDenied
 
@@ -155,8 +156,8 @@ class RoomDetail(APIView):
 
     def delete(self, request, pk):
         room = self.get_object(pk)
-        if not request.user.is_authenticated:
-            raise NotAuthenticated
+        # if not request.user.is_authenticated:
+        #     raise NotAuthenticated
         if (
             room.owner != request.user
         ):  # elif가 아닌 if를 사용한 이유는 elif는 if문이 작동하지 않았을 때만 실행되는데, 그게 아니라 두 가지 모두 작동하길 원하기 때문에 쓴다.
@@ -197,6 +198,8 @@ class RoomReviews(APIView):
 
 
 class RoomPhotos(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get_object(self, pk):
         try:
             return Room.objects.get(pk=pk)
@@ -205,8 +208,8 @@ class RoomPhotos(APIView):
 
     def post(self, request, pk):
         room = self.get_object(pk)
-        if not request.user.is_authenticated:
-            raise NotAuthenticated
+        # if not request.user.is_authenticated:
+        #     raise NotAuthenticated
         if request.user != room.owner:
             raise PermissionDenied
         serializer = PhotoSerializer(data=request.data)
