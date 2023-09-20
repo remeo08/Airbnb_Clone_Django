@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,6 +15,8 @@ from categories.models import Category
 from .serializers import AmenitySerializer, RoomDetailSerializer, RoomListSerializer
 from reviews.serializers import ReviewSerializer
 from medias.serializers import PhotoSerializer
+from bookings.models import Booking
+from bookings.serializers import PublicBookingSerializer
 
 
 class Amenities(APIView):
@@ -167,6 +170,8 @@ class RoomDetail(APIView):
 
 
 class RoomReviews(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get_objects(self, pk):
         try:
             return Room.objects.get(pk=pk)
@@ -176,7 +181,7 @@ class RoomReviews(APIView):
     def get(self, request, pk):
         try:
             page = request.query_params.get("page", 1)
-            psge = int(page)
+            page = int(page)
         except ValueError:
             page = 1
         # page_size = 3
@@ -195,6 +200,16 @@ class RoomReviews(APIView):
         # room = self.get_object(pk)
         # serializer = ReviewSerializer(room.reviews.all(), many=True)
         # return Response(serializer.data)
+
+    def post(self, request, pk):
+        serializer = ReviewSerializer(data=request.data)
+        if serializer.is_valid():
+            review = serializer.save(
+                user=request.user,
+                room=self.get_objects(pk),
+            )
+            serializer = ReviewSerializer(review)
+            return Response(serializer.data)
 
 
 class RoomPhotos(APIView):
@@ -219,3 +234,23 @@ class RoomPhotos(APIView):
             return Response(serializer.data)
         else:
             return Response(serializer.errors)
+
+
+class RoomBookings(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_object(self, pk):
+        try:
+            return Room.objects.get(pk=pk)
+        except:
+            raise NotFound
+
+    def get(self, request, pk):
+        room = self.get_object(pk)
+        now = timezone.now()
+        print(timezone.localtime(now))
+        bookings = Booking.objects.filter(
+            room=room, kind=Booking.BookingKindChoices.ROOM
+        )
+        serializer = PublicBookingSerializer(bookings, many=True)
+        return Response(serializer.data)

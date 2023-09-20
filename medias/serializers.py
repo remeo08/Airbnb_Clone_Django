@@ -4,7 +4,7 @@ from .models import Photo
 
 
 class PhotoSerializer(ModelSerializer):
-    hello = serializers.CharField(max)
+    # hello = serializers.CharField(max)
 
     class Meta:
         model = Photo
